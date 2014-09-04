@@ -44,7 +44,8 @@ def build_image(profile, clean=False, ignore_cache=False):
                 sh.git('submodule','update')
 
         result = dock.build(path=tmpd + '/repo', tag=profile.identifier, quiet=True, nocache=ignore_cache)
-        print ''.join(str(x) for x in result) # fixme this should use logger
+        for x in result:
+            print x  # fixme this should use logger
 
     sh.rm('-rf', tmpd)
     return result
@@ -59,6 +60,8 @@ def create_container(profile, overrides=None, **kwargs):
     :return:
     """
 
+    print "keyword args: " + str(kwargs)
+    
     # get the environment from the profile and construct it as a dict.
     environment = {e.name: e.value for e in profile.dockerenvvar_set.all()}
     # grab extra environment vars from keyword args
@@ -78,8 +81,8 @@ def create_container(profile, overrides=None, **kwargs):
     # After any possible overrides are applied add the keyword arguments to
     if not overrides:
         environment.update(specific_environment)
-        ports.add(specific_ports)
-        volumes.add(specific_volumes)
+        ports = ports.union(specific_ports)
+        volumes = volumes.union(specific_volumes)
         ports = list(ports)
         volumes = list(volumes)
 
@@ -108,8 +111,8 @@ def create_container(profile, overrides=None, **kwargs):
         # apply overrides, then apply keyword args
         if overrides.overrideport_set.exists():
             over_port = {e.container for e in  overrides.overrideport_set.all()}
-            ports.add(over_port)
-        ports.add(specific_ports)
+            ports = ports.union(over_port)
+        ports = ports.union(specific_ports)
         ports = list(ports)
 
         # memory limit handled specially because we're expecting megabytes, which needs a suffix
@@ -119,8 +122,8 @@ def create_container(profile, overrides=None, **kwargs):
         # apply overrides, then apply keyword args
         if overrides.overridevolume_set.exists():
             over_vol = {e.container for e in  overrides.overridevolume_set}
-            volumes.add(over_vol)
-        volumes.add(specific_volumes)
+            volumes = volumes.union(over_vol)
+        volumes = volumes.union(specific_volumes)
         volumes = list(volumes)
 
         container = dock.create_container(
