@@ -122,6 +122,6 @@ Docker Processes is implemented as a Django app and requireds Celery and an AMQP
 
 ## Caveats
 
-Docker links are not supported yet, as we will need to recursively create and start containers and find a way to bring them back down at the end of the process.  Anyone wants to help with that, the code is in `tasks.py`.  
+The only links supported so far are flat. If a container requires a link to a container that requires a link, it will not work.  You can link other containers to your target container, but there's no nesting. I have no need for nested linking right now, but if someone wants to add it, I would support that.
 
 This code was originally developed at the [NCEAS/RENCI Open Science Codefest 2014](http://nceas.github.io/open-science-codefest/) in support of the [Hydroshare](https://github.com/hydroshare) project.  
