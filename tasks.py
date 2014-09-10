@@ -61,7 +61,20 @@ def create_container(profile, overrides=None, **kwargs):
     :param profile: a DockerProfile object that describes how to build and run the container.
     :param overrides: A DockerfileOverrides object that changes the default behavior of the container.
     :param kwargs: Any further overrides as Docker run arguments.  These override both the profile and the overrides.
-    :return:
+
+    Valid keyword args:
+
+        - env : a dict of string key-value pairs that supply extra environment variables
+        - ports : a dict of container:host string-string pairs that supply info on how to map ports (see docker for more docs on this)
+        - volumes : a dict of name:directory or directory:directory pairs that supply info on binding volumes (see docker docs for more on this)
+        - memory_limit : an integer in megabytes of the max memory allocated to the container
+        - cpu_shares : see docker run docs
+        - entrypoint : see docker run docs
+        - user : see docker run docs
+        - working_dir - see docker run docs
+        - command - see docker run docs
+
+    :return: the JSON description of the container from docker-py
     """
 
     print "keyword args: " + str(kwargs)
@@ -100,7 +113,7 @@ def create_container(profile, overrides=None, **kwargs):
             entrypoint=kwargs.get('entrypoint', None),
             user=kwargs.get('user', None),
             working_dir=kwargs.get('working_dir', None),
-            command=kwargs.get('commmand', None),
+            command=kwargs.get('command', None),
             environment=environment,
             ports=ports if len(ports) else None,
             volumes=volumes if len(volumes) else None
@@ -152,6 +165,18 @@ def start_container(profile, name, overrides=None, **kwargs):
     :param profile: a DockerProfile object that describes how to build and run the container.
     :param overrides: A DockerfileOverrides object that changes the default behavior of the container.
     :param kwargs: Any further overrides as Docker run arguments.  These override both the profile and the overrides.
+
+    valid keyword args are the same as in docker-py and docker:
+        - env
+        - ports
+        - volumes
+        - links
+        - lxc_conf
+        - privileged
+        - dns
+        - volumes_from
+        - network_mode
+
     :return:
     """
 
@@ -267,6 +292,33 @@ def remove_stopped_containers():
 
 @shared_task
 def run_process(profile, overrides=None, **kwargs):
+    """
+    This is the most common task you will want to use.
+
+    Valid keyword args:
+
+        - env : a dict of string key-value pairs that supply extra environment variables
+        - ports : a dict of container:host string-string pairs that supply info on how to map ports (see docker for more docs on this)
+        - volumes : a dict of name:directory or directory:directory pairs that supply info on binding volumes (see docker docs for more on this)
+        - memory_limit : an integer in megabytes of the max memory allocated to the container
+        - cpu_shares : see docker run docs
+        - entrypoint : see docker run docs
+        - user : see docker run docs
+        - working_dir - see docker run docs
+        - command - see docker run docs
+        - links - see docker run docs
+        - lxc_conf - see docker run docs
+        - privileged - see docker run docs
+        - dns - see docker run docs
+        - volumes_from - see docker run docs
+        - network_mode - see docker run docs
+
+    :param profile: The DockerProfile object
+    :param overrides: A ContainerOverrides object
+    :param kwargs: Keyword args.  See valid keyword args
+    :return:
+    """
+
     # 1. check docker images to make sure that the image has been built
     #    if not, then send a subtask to build the image
     # 2. create the container
