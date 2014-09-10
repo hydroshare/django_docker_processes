@@ -116,3 +116,4 @@ class DockerProcess(models.Model):
     profile = models.ForeignKey(DockerProfile)
     container_id = models.CharField(max_length=128)
     token = models.CharField(max_length=128, default=lambda: str(uuid4()), unique=True, null=False, db_index=True)
+    logs = models.TextField(null=True)

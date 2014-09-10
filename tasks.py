@@ -303,6 +303,7 @@ def run_process(profile, overrides=None, **kwargs):
         pass
 
     output = dock.logs(name)
+    proc.logs = output
     dock.remove_container(name)
 
     return output

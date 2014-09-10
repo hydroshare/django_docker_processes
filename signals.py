@@ -1,4 +1,4 @@
 from django.core.signals import Signal
 
-process_completed = Signal(providing_args=['result_text', ''])
-process_aborted = Signal(providing_args=[])
+process_completed = Signal(providing_args=['result_text', 'result_data', 'files', 'profile','logs'])
+process_aborted = Signal(providing_args=['error_text','result_data','profile','logs'])
