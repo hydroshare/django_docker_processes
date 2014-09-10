@@ -287,11 +287,11 @@ def run_process(profile, overrides=None, **kwargs):
 
     here = Site.objects.get_current()
     env = kwargs.get('env', {})
-    env['RESPONSE_URL'] = 'http://' + here.domain + '/django_docker_processes/process_finished/?' + urlencode({
+    env['RESPONSE_URL'] = 'http://' + here.domain + reverse('docker-process-finished', {
         'profile_name': profile.name,
         'token': proc.token
     })
-    env['ABORT_URL'] = 'http://' + here.domain + '/django_docker_processes/process_aborted/?' + urlencode({
+    env['ABORT_URL'] = 'http://' + here.domain + reverse('docker-process-aborted', {
         'profile_name': profile.name,
         'token': proc.token
     })

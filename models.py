@@ -1,5 +1,6 @@
 from django.db import models
 from jsonfield import JSONField
+from uuid import uuid4
 
 
 class DockerProfile(models.Model):
@@ -114,4 +115,4 @@ class DockerPort(models.Model):
 class DockerProcess(models.Model):
     profile = models.ForeignKey(DockerProfile)
     container_id = models.CharField(max_length=128)
-    token = models.CharField(max_length=128, default=uuid4, unique=True, null=False, db_index=True)
+    token = models.CharField(max_length=128, default=lambda: str(uuid4()), unique=True, null=False, db_index=True)
