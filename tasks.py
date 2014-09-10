@@ -1,7 +1,11 @@
+from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
 import docker
 import sh
 from tempfile import mkdtemp
 from celery import shared_task
+from urllib import urlencode
+from django_docker_processes import models
 from .settings import DOCKER_URL, DOCKER_API_VERSION
 import contextlib
 import os
@@ -276,6 +280,22 @@ def run_process(profile, overrides=None, **kwargs):
     container = create_container(profile, overrides, **kwargs)
     name = container['Id']
 
+    proc = models.DockerProcess.objects.create(
+        profile=profile,
+        container_id=name
+    )
+
+    here = Site.objects.get_current()
+    env = kwargs.get('env', {})
+    env['RESPONSE_URL'] = 'http://' + here.domain + '/django_docker_processes/process_finished/?' + urlencode({
+        'profile_name': profile.name,
+        'token': proc.token
+    })
+    env['ABORT_URL'] = 'http://' + here.domain + '/django_docker_processes/process_aborted/?' + urlencode({
+        'profile_name': profile.name,
+        'token': proc.token
+    })
+    kwargs['env'] = env
     start_container(profile, name, overrides, **kwargs)
 
     # bind the task to the runtime of the container. There might be a better way to do this.

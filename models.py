@@ -6,6 +6,7 @@ from django import forms
 import unicodedata
 import re
 from south.modelsinspector import add_introspection_rules
+from uuid import uuid4
 
 add_introspection_rules([], ["^django_docker_processes\.models\.PasswordField"])
 
@@ -119,3 +120,8 @@ class DockerPort(models.Model):
     host = models.CharField(max_length=65536)
     container = models.CharField(max_length=65536)
 
+
+class DockerProcess(models.Model):
+    profile = models.ForeignKey(DockerProfile)
+    container_id = models.CharField(max_length=128)
+    token = models.CharField(max_length=128, default=uuid4, unique=True, null=False, db_index=True)
