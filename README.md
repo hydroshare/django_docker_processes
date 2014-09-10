@@ -14,35 +14,37 @@ Container overrides allow you to further control the way the container is create
 
 In Python:
 
-    from django_docker_processes.models import DockerProfile
-    from django_docker_processes import signals, tasks
+```python
+from django_docker_processes.models import DockerProfile
+from django_docker_processes import signals, tasks
+
+#
+# set up code to handle the results
+#
+
+def when_my_process_ends(sender, instance, result_text=None, result_data=None, files, logs):
+    # make something out of the result data - result_data is a dict, result_text is plaintext
+    # files are UploadedFile instances
+    # logs are plain text stdout and stderr from the finished container
     
-    #
-    # set up code to handle the results
-    #
+def when_my_process_fails(sender, instance, error_text=None, error_data=None, logs):
+    # do something out of the error data
+    # error_data is a dict
+    # error_text is plain text
+    # logs are plain text stdout and stderr from the dead container
     
-    def when_my_process_ends(sender, instance, result_text=None, result_data=None, files, logs):
-        # make something out of the result data - result_data is a dict, result_text is plaintext
-        # files are UploadedFile instances
-        # logs are plain text stdout and stderr from the finished container
-        
-    def when_my_process_fails(sender, instance, error_text=None, error_data=None, logs):
-        # do something out of the error data
-        # error_data is a dict
-        # error_text is plain text
-        # logs are plain text stdout and stderr from the dead container
-        
-    finished = signals.process_finished.connect(when_my_process_ends, weak=False)
-    error_handler = signals.process_aborted.connect(when_my_process_fails, weak=False)
-    
-    #
-    # pull a profile and execute the task
-    # 
-    
-    my_profile = get_object_or_404(DockerProfile, name='My Process')
-    promise = tasks.run_process.delay(my_profile, env={ ... })
-    logs = promise.get()
-    print logs
+finished = signals.process_finished.connect(when_my_process_ends, weak=False)
+error_handler = signals.process_aborted.connect(when_my_process_fails, weak=False)
+
+#
+# pull a profile and execute the task
+# 
+
+my_profile = get_object_or_404(DockerProfile, name='My Process')
+promise = tasks.run_process.delay(my_profile, env={ ... })
+logs = promise.get()
+print logs
+```
 
 You can also post any files as multipart/form-data and they will get passed along to the signal handler.  See tasks.py for more documentation on the individual tasks.
 
