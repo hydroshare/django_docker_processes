@@ -1,13 +1,69 @@
 # Django Docker Processes 
 
-This project needs a better, more exciting name, because what it allows you to do is actually really exciting.  
+## Why do I need this?
+
+Django Docker Processes is for when you want to run arbitrary processes in Django while keeping them separate and secure from the main Django process and from each other. Docker Processes allows an administrator to point at a GitHub repository with a Dockerfile, then build and run that Dockerfile from within Django.  It can scale across any number of machines and it can operate asynchronously.  
+
+## How to use it
+
+In the Django admin site:
+
+The admin site will get an entry for `Django_Docker_Processes`.  In there you can set up DockerProfiles and ContainerOverrides.  DockerProfiles are the basis for making containers.  You can specify the codebase for the container by setting a name, a git repo, a commit ID for the git repo or a branch.  You can then link to other containers, expose ports and bind volumes as well as bind environment variables.  
+
+Container overrides allow you to further control the way the container is created.  These provide things like memory and CPU constraints and allow you to override settings on the base image.  
+
+In Python:
+
+    from django_docker_processes.models import DockerProfile
+    from django_docker_processes import signals, tasks
+    
+    #
+    # set up code to handle the results
+    #
+    
+    def when_my_process_ends(sender, instance, result_text=None, result_data=None, files, logs):
+        # make something out of the result data - result_data is a dict, result_text is plaintext
+        # files are UploadedFile instances
+        # logs are plain text stdout and stderr from the finished container
+        
+    def when_my_process_fails(sender, instance, error_text=None, error_data=None, logs):
+        # do something out of the error data
+        # error_data is a dict
+        # error_text is plain text
+        # logs are plain text stdout and stderr from the dead container
+        
+    finished = signals.process_finished.connect(when_my_process_ends, weak=False)
+    error_handler = signals.process_aborted.connect(when_my_process_fails, weak=False)
+    
+    #
+    # pull a profile and execute the task
+    # 
+    
+    my_profile = get_object_or_404(DockerProfile, name='My Process')
+    promise = tasks.run_process.delay(my_profile, env={ ... })
+    logs = promise.get()
+    print logs
+
+You can also post any files as multipart/form-data and they will get passed along to the signal handler.  See tasks.py for more documentation on the individual tasks.
+
+Now, in your Docker container, you will want a script that scrapes the environment looking for any parameters and the special environment variables: `RESPONSE_URL` and `ABORT_URL`.  For example your container's init script could look exactly like this:
+
+    #!/usr/bin/python
+    
+    import requests
+    import os
+    import json
+    
+    requests.post(os.environ['RESPONSE_URL'], data={ 
+        'result_text': "result text",
+        'result_data': json.dumps(os.environ)
+    })
+    
+
 
 ## What's it do?
 
-* Allows you to set up image profiles in the Django admin tool, including volumes, ports, and links.
-* Lets you set up run profiles for the images, including CPU and memory limits and overridden commands, additional volumes, etcetera. 
-
-With those profiles, docker_processes will:
+`django_docker_processes` will:
 
 * Clone any commit of any branch of a git repository, which is assumed to container a Dockerfile (at least)
 * Init and update any submodules in that repository
