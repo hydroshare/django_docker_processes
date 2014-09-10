@@ -29,7 +29,6 @@ Docker Processes is implemented as a Django app and requireds Celery and an AMQP
 * [Django](http://www.djangoproject.com)
 * [Docker](http://www.docker.io)
 * django-jsonfield (pip)
-* south
 * kombu
 * Python 2.7
 * Git
