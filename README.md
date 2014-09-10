@@ -63,10 +63,7 @@ Now, in your Docker container, you will want a script that scrapes the environme
 
 ## What's it do?
 
-* Allows you to set up image profiles in the Django admin tool, including volumes, ports, and links.
-* Lets you set up run profiles for the images, including CPU and memory limits and overridden commands, additional volumes, etcetera. 
-
-With those profiles, docker_processes will:
+`django_docker_processes` will:
 
 * Clone any commit of any branch of a git repository, which is assumed to container a Dockerfile (at least)
 * Init and update any submodules in that repository
