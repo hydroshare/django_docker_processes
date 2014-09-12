@@ -329,6 +329,13 @@ def run_process(profile, overrides=None, **kwargs):
     if not len(dock.images(name=profile.identifier)) > 0:
         build_image.s(profile)()
 
+    links = {link.name: (link, create_container(link.profile, link.overrides)) for link in profile.links.all()}
+    for link, container in links.values():
+        if not len(dock.images(name=link.profile.identifier)) > 0:
+            build_image.s(link.profile)()
+
+        start_container(container['Id'], link.overrides)
+
     container = create_container(profile, overrides, **kwargs)
     name = container['Id']
 
@@ -348,6 +355,9 @@ def run_process(profile, overrides=None, **kwargs):
         'token': proc.token
     })
     kwargs['env'] = env
+    if len(links):
+        kwargs['links'] = {container["Id"]: link_name for link_name, (link, container) in links.items()}
+
     start_container(profile, name, overrides, **kwargs)
 
     # bind the task to the runtime of the container. There might be a better way to do this.

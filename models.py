@@ -84,6 +84,7 @@ class DockerLink(models.Model):
     docker_profile = models.ForeignKey(DockerProfile,
         help_text='''This is the "target" container.  It will receive information about
 the "from" container as an environment var''')
+    docker_overrides = models.ForeignKey(ContainerOverrides, null=True, blank=True, help_text='Overrides for the container to run')
     link_name = models.CharField(max_length=256)
     docker_profile_from = models.ForeignKey(DockerProfile,
         related_name='profile_link_to',
