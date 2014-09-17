@@ -15,7 +15,6 @@ Container overrides allow you to further control the way the container is create
 In Python:
 
 ```python
-from django_docker_processes.models import DockerProfile
 from django_docker_processes import signals, tasks
 
 #
@@ -37,13 +36,18 @@ finished = signals.process_finished.connect(when_my_process_ends, weak=False)
 error_handler = signals.process_aborted.connect(when_my_process_fails, weak=False)
 
 #
-# pull a profile and execute the task
+# Interactively pull a profile and execute the task
 # 
 
+from django_docker_processes.models import DockerProfile
+from django_docker_processes import tasks
+
 my_profile = get_object_or_404(DockerProfile, name='My Process')
-promise = tasks.run_process.delay(my_profile, env={ ... })
+process = models.DockerProcess.objects.create(profile=my_profile) # creates a unique ID
+promise = tasks.run_process.apply_async(process, env={ ... })
 logs = promise.get()
 print logs
+process.delete() # no reason to leave it hanging around in the database
 ```
 
 You can also post any files as multipart/form-data and they will get passed along to the signal handler.  See tasks.py for more documentation on the individual tasks.
