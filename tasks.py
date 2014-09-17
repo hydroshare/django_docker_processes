@@ -214,7 +214,7 @@ def start_container(profile, name, overrides=None, **kwargs):
             lxc_conf=kwargs.get('lxc_conf', None),
             privileged=kwargs.get('privileged', None),
             dns=kwargs.get('dns', None),
-            links=links,
+         #   links=links,
             volumes_from=kwargs.get('volumes_from', None),
             network_mode=kwargs.get('network_mode', None),
             port_bindings=ports if len(ports) else None,
@@ -249,7 +249,7 @@ def start_container(profile, name, overrides=None, **kwargs):
             lxc_conf=kwargs.get('lxc_conf', overrides.lxc_conf),
             privileged=kwargs.get('privileged', overrides.privileged),
             dns=kwargs.get('dns', [d.strip() for d in overrides.dns.split(',')] if overrides.dns else None),
-            links=links,
+            # links=links,
             volumes_from=kwargs.get('volumes_from', None),
             network_mode=kwargs.get('network_mode', None),
             port_bindings=ports if len(ports) else None,
@@ -329,12 +329,12 @@ def run_process(profile, overrides=None, **kwargs):
     if not len(dock.images(name=profile.identifier)) > 0:
         build_image.s(profile)()
 
-    links = {link.name: (link, create_container(link.profile, link.overrides)) for link in profile.links.all()}
-    for link, container in links.values():
-        if not len(dock.images(name=link.profile.identifier)) > 0:
-            build_image.s(link.profile)()
-
-        start_container(container['Id'], link.overrides)
+#    links = {link.name: (link, create_container(link.profile, link.overrides)) for link in profile.links.all()}
+#    for link, container in links.values():
+#        if not len(dock.images(name=link.profile.identifier)) > 0:
+#            build_image.s(link.profile)()
+#
+#        start_container(container['Id'], link.overrides)
 
     container = create_container(profile, overrides, **kwargs)
     name = container['Id']
@@ -346,17 +346,17 @@ def run_process(profile, overrides=None, **kwargs):
 
     here = Site.objects.get_current()
     env = kwargs.get('env', {})
-    env['RESPONSE_URL'] = 'http://' + here.domain + reverse('docker-process-finished', {
+    env['RESPONSE_URL'] = 'http://' + here.domain + reverse('docker-process-finished', kwargs={
         'profile_name': profile.name,
         'token': proc.token
     })
-    env['ABORT_URL'] = 'http://' + here.domain + reverse('docker-process-aborted', {
+    env['ABORT_URL'] = 'http://' + here.domain + reverse('docker-process-aborted', kwargs={
         'profile_name': profile.name,
         'token': proc.token
     })
     kwargs['env'] = env
-    if len(links):
-        kwargs['links'] = {container["Id"]: link_name for link_name, (link, container) in links.items()}
+    #if len(links):
+    #    kwargs['links'] = {container["Id"]: link_name for link_name, (link, container) in links.items()}
 
     start_container(profile, name, overrides, **kwargs)
 

@@ -1,6 +1,8 @@
 from django.db import models
 from jsonfield import JSONField
 from uuid import uuid4
+import re
+import unicodedata
 
 
 class DockerProfile(models.Model):
