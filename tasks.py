@@ -181,10 +181,6 @@ def start_container(profile, name, overrides=None, **kwargs):
     """
 
 
-    # get the environment from the profile and construct it as a dict.
-    environment = {e.name: e.value for e in profile.dockerenvvar_set.all()}
-    # grab extra environment vars from keyword args
-    specific_environment = kwargs.get('env', {})
 
     # get the ports from the environment and construct a port set
     ports = {e.container: e.host for e in profile.dockerport_set.all()}
@@ -204,7 +200,6 @@ def start_container(profile, name, overrides=None, **kwargs):
     # construct the container itself.  If there are overrides, apply them first.
     # After any possible overrides are applied add the keyword arguments to
     if not overrides:
-        environment.update(specific_environment)
         ports.update(specific_ports)
         volumes.update(specific_volumes)
         links.update(specific_links)
@@ -221,11 +216,6 @@ def start_container(profile, name, overrides=None, **kwargs):
             binds=volumes if len(volumes) else None
         )
     else:
-        # apply overrides, then apply keyword args
-        if overrides.overrideenvvar_set.exists():
-            over_env = {e.name: e.value for e in  overrides.overrideenvvar_set.all()}
-            environment.update(over_env)
-        environment.update(specific_environment)
 
         # apply overrides, then apply keyword args
         if overrides.overrideport_set.exists():
@@ -327,6 +317,17 @@ def run_process(proc, overrides=None, **kwargs):
     # 5. remove the container
 
     profile = proc.profile
+    here = Site.objects.get_current()
+    env = kwargs.get('env', {})
+    env['RESPONSE_URL'] = 'http://' + here.domain + reverse('docker-process-finished', kwargs={
+        'profile_name': profile.name,
+        'token': proc.token
+    })
+    env['ABORT_URL'] = 'http://' + here.domain + reverse('docker-process-aborted', kwargs={
+        'profile_name': profile.name,
+        'token': proc.token
+    })
+    kwargs['env'] = env
     if not len(dock.images(name=profile.identifier)) > 0:
         build_image.s(profile)()
 
@@ -343,17 +344,6 @@ def run_process(proc, overrides=None, **kwargs):
     proc.container_id=name
     proc.save()
 
-    here = Site.objects.get_current()
-    env = kwargs.get('env', {})
-    env['RESPONSE_URL'] = 'http://' + here.domain + reverse('docker-process-finished', kwargs={
-        'profile_name': profile.name,
-        'token': proc.token
-    })
-    env['ABORT_URL'] = 'http://' + here.domain + reverse('docker-process-aborted', kwargs={
-        'profile_name': profile.name,
-        'token': proc.token
-    })
-    kwargs['env'] = env
     #if len(links):
     #    kwargs['links'] = {container["Id"]: link_name for link_name, (link, container) in links.items()}
 
