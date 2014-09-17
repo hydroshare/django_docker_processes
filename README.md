@@ -76,6 +76,8 @@ Or check out this GitHub project using shell: [Pandoc-Docker](https://github.com
 
 ## What's it do?
 
+<img src='https://raw.githubusercontent.com/JeffHeard/django_docker_processes/master/docs/img/docker-processes-workflow.png'/>
+
 `django_docker_processes` will:
 
 * Clone any commit of any branch of a git repository, which is assumed to container a Dockerfile (at least)
