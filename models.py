@@ -3,7 +3,7 @@ from jsonfield import JSONField
 from uuid import uuid4
 import re
 import unicodedata
-
+from . import signals
 
 class DockerProfile(models.Model):
     """This model takes a git repository with a Dockerfile in it"""
@@ -122,3 +122,5 @@ class DockerProcess(models.Model):
     logs = models.TextField(null=True, blank=True)
     finished = models.BooleanField(default=False)
     error = models.BooleanField(default=False)
+
+

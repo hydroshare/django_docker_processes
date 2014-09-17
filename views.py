@@ -70,3 +70,4 @@ def process_aborted(request, profile_name, token, *args, **kwargs):
     )
     return HttpResponse()
 
+
