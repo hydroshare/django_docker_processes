@@ -12,10 +12,10 @@ The admin site will get an entry for `Django_Docker_Processes`.  In there you ca
 
 Container overrides allow you to further control the way the container is created.  These provide things like memory and CPU constraints and allow you to override settings on the base image.  
 
-In Python:
+#### In your Django app, define a signal handler:
 
 ```python
-from django_docker_processes import signals, tasks
+from django_docker_processes import signals
 
 #
 # set up code to handle the results
@@ -34,7 +34,11 @@ def when_my_process_fails(sender, instance, error_text=None, error_data=None, lo
     
 finished = signals.process_finished.connect(when_my_process_ends, weak=False)
 error_handler = signals.process_aborted.connect(when_my_process_fails, weak=False)
+```
 
+#### Now, somewhere else in IPython or your Django app, call the task
+
+```python
 #
 # Interactively pull a profile and execute the task
 # 
