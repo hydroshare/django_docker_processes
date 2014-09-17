@@ -37,3 +37,4 @@ class ContainerOverridesAdmin(admin.ModelAdmin):
 
 admin.site.register(models.DockerProfile, DockerProfileAdmin)
 admin.site.register(models.ContainerOverrides, ContainerOverridesAdmin)
+admin.site.register(models.DockerProcess)

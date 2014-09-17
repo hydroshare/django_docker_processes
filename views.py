@@ -25,10 +25,11 @@ def process_finished(request, profile_name, token, *args, **kwargs):
     proc = get_object_or_404(models.DockerProcess, profile__name=profile_name, token=token)
     profile = proc.profile
     logs = proc.logs
-    proc.delete()
+    proc.finished = True
+    proc.save()
 
-    signals.process_finished.send(models.DockerProfile,
-          instance=profile,
+    signals.process_finished.send(models.DockerProcess,
+          instance=proc,
           token=token,
           result_text=request.POST.get('result_text', None),
           result_data=json.loads(request.POST.get('result_data', [])) if 'result_data' in request.POST else None,
@@ -56,10 +57,12 @@ def process_aborted(request, profile_name, token, *args, **kwargs):
     proc = get_object_or_404(models.DockerProcess, profile__name=profile_name, token=token)
     profile = proc.profile
     logs = proc.logs
-    proc.delete()
+    proc.finished = True
+    proc.error = True
+    proc.save()
 
-    signals.process_aborted.send(models.DockerProfile,
-          instance=profile,
+    signals.process_aborted.send(models.DockerProcess,
+          instance=proc,
           token=token,
           error_text=request.POST.get('error_text', None),
           error_data=json.loads(request.POST.get('error_data', [])) if 'result_data' in request.POST else None,

@@ -291,7 +291,7 @@ def remove_stopped_containers():
 
 
 @shared_task
-def run_process(profile, overrides=None, **kwargs):
+def run_process(proc, overrides=None, **kwargs):
     """
     This is the most common task you will want to use.
 
@@ -326,16 +326,15 @@ def run_process(profile, overrides=None, **kwargs):
     # 4. attach to the container
     # 5. remove the container
 
+    profile = proc.profile
     if not len(dock.images(name=profile.identifier)) > 0:
         build_image.s(profile)()
 
     container = create_container(profile, overrides, **kwargs)
     name = container['Id']
 
-    proc = models.DockerProcess.objects.create(
-        profile=profile,
-        container_id=name
-    )
+    proc.container_id=name
+    proc.save()
 
     here = Site.objects.get_current()
     env = kwargs.get('env', {})
