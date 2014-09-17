@@ -1,14 +1,6 @@
 from django.db import models
 from jsonfield import JSONField
-
-# this is going to go in another file.  I can't believe there's no default encryption
-from django import forms
-import unicodedata
-import re
-from south.modelsinspector import add_introspection_rules
-
-add_introspection_rules([], ["^django_docker_processes\.models\.PasswordField"])
-
+from uuid import uuid4
 
 
 class DockerProfile(models.Model):
@@ -17,7 +9,7 @@ class DockerProfile(models.Model):
     git_repository = models.CharField(max_length=16384)
     git_use_submodules = models.BooleanField(default=False)
     git_username = models.CharField(max_length=256, blank=True, null=True)
-    git_password = models.CharField(max_length=64, blank=True, null=True)
+    git_password = models.CharField(max_length=64, blank=True, null=True) # fixme this should be encrypted
     commit_id = models.CharField(max_length=64, blank=True, null=True)
     branch = models.CharField(max_length=1024, default='master', blank=True, null=True)
 
@@ -92,6 +84,7 @@ class DockerLink(models.Model):
     docker_profile = models.ForeignKey(DockerProfile,
         help_text='''This is the "target" container.  It will receive information about
 the "from" container as an environment var''')
+    docker_overrides = models.ForeignKey(ContainerOverrides, null=True, blank=True, help_text='Overrides for the container to run')
     link_name = models.CharField(max_length=256)
     docker_profile_from = models.ForeignKey(DockerProfile,
         related_name='profile_link_to',
@@ -119,3 +112,9 @@ class DockerPort(models.Model):
     host = models.CharField(max_length=65536)
     container = models.CharField(max_length=65536)
 
+
+class DockerProcess(models.Model):
+    profile = models.ForeignKey(DockerProfile)
+    container_id = models.CharField(max_length=128)
+    token = models.CharField(max_length=128, default=lambda: str(uuid4()), unique=True, null=False, db_index=True)
+    logs = models.TextField(null=True)

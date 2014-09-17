@@ -1,7 +1,11 @@
+from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
 import docker
 import sh
 from tempfile import mkdtemp
 from celery import shared_task
+from urllib import urlencode
+from django_docker_processes import models
 from .settings import DOCKER_URL, DOCKER_API_VERSION
 import contextlib
 import os
@@ -57,7 +61,20 @@ def create_container(profile, overrides=None, **kwargs):
     :param profile: a DockerProfile object that describes how to build and run the container.
     :param overrides: A DockerfileOverrides object that changes the default behavior of the container.
     :param kwargs: Any further overrides as Docker run arguments.  These override both the profile and the overrides.
-    :return:
+
+    Valid keyword args:
+
+        - env : a dict of string key-value pairs that supply extra environment variables
+        - ports : a dict of container:host string-string pairs that supply info on how to map ports (see docker for more docs on this)
+        - volumes : a dict of name:directory or directory:directory pairs that supply info on binding volumes (see docker docs for more on this)
+        - memory_limit : an integer in megabytes of the max memory allocated to the container
+        - cpu_shares : see docker run docs
+        - entrypoint : see docker run docs
+        - user : see docker run docs
+        - working_dir - see docker run docs
+        - command - see docker run docs
+
+    :return: the JSON description of the container from docker-py
     """
 
     print "keyword args: " + str(kwargs)
@@ -96,7 +113,7 @@ def create_container(profile, overrides=None, **kwargs):
             entrypoint=kwargs.get('entrypoint', None),
             user=kwargs.get('user', None),
             working_dir=kwargs.get('working_dir', None),
-            command=kwargs.get('commmand', None),
+            command=kwargs.get('command', None),
             environment=environment,
             ports=ports if len(ports) else None,
             volumes=volumes if len(volumes) else None
@@ -148,6 +165,18 @@ def start_container(profile, name, overrides=None, **kwargs):
     :param profile: a DockerProfile object that describes how to build and run the container.
     :param overrides: A DockerfileOverrides object that changes the default behavior of the container.
     :param kwargs: Any further overrides as Docker run arguments.  These override both the profile and the overrides.
+
+    valid keyword args are the same as in docker-py and docker:
+        - env
+        - ports
+        - volumes
+        - links
+        - lxc_conf
+        - privileged
+        - dns
+        - volumes_from
+        - network_mode
+
     :return:
     """
 
@@ -263,6 +292,33 @@ def remove_stopped_containers():
 
 @shared_task
 def run_process(profile, overrides=None, **kwargs):
+    """
+    This is the most common task you will want to use.
+
+    Valid keyword args:
+
+        - env : a dict of string key-value pairs that supply extra environment variables
+        - ports : a dict of container:host string-string pairs that supply info on how to map ports (see docker for more docs on this)
+        - volumes : a dict of name:directory or directory:directory pairs that supply info on binding volumes (see docker docs for more on this)
+        - memory_limit : an integer in megabytes of the max memory allocated to the container
+        - cpu_shares : see docker run docs
+        - entrypoint : see docker run docs
+        - user : see docker run docs
+        - working_dir - see docker run docs
+        - command - see docker run docs
+        - links - see docker run docs
+        - lxc_conf - see docker run docs
+        - privileged - see docker run docs
+        - dns - see docker run docs
+        - volumes_from - see docker run docs
+        - network_mode - see docker run docs
+
+    :param profile: The DockerProfile object
+    :param overrides: A ContainerOverrides object
+    :param kwargs: Keyword args.  See valid keyword args
+    :return:
+    """
+
     # 1. check docker images to make sure that the image has been built
     #    if not, then send a subtask to build the image
     # 2. create the container
@@ -273,8 +329,34 @@ def run_process(profile, overrides=None, **kwargs):
     if not len(dock.images(name=profile.identifier)) > 0:
         build_image.s(profile)()
 
+    links = {link.name: (link, create_container(link.profile, link.overrides)) for link in profile.links.all()}
+    for link, container in links.values():
+        if not len(dock.images(name=link.profile.identifier)) > 0:
+            build_image.s(link.profile)()
+
+        start_container(container['Id'], link.overrides)
+
     container = create_container(profile, overrides, **kwargs)
     name = container['Id']
+
+    proc = models.DockerProcess.objects.create(
+        profile=profile,
+        container_id=name
+    )
+
+    here = Site.objects.get_current()
+    env = kwargs.get('env', {})
+    env['RESPONSE_URL'] = 'http://' + here.domain + reverse('docker-process-finished', {
+        'profile_name': profile.name,
+        'token': proc.token
+    })
+    env['ABORT_URL'] = 'http://' + here.domain + reverse('docker-process-aborted', {
+        'profile_name': profile.name,
+        'token': proc.token
+    })
+    kwargs['env'] = env
+    if len(links):
+        kwargs['links'] = {container["Id"]: link_name for link_name, (link, container) in links.items()}
 
     start_container(profile, name, overrides, **kwargs)
 
@@ -283,6 +365,7 @@ def run_process(profile, overrides=None, **kwargs):
         pass
 
     output = dock.logs(name)
+    proc.logs = output
     dock.remove_container(name)
 
     return output
