@@ -1,8 +1,8 @@
 from django.db import models
 from jsonfield import JSONField
 from uuid import uuid4
-import unicodedata
 import re
+import unicodedata
 
 
 class DockerProfile(models.Model):
@@ -86,6 +86,7 @@ class DockerLink(models.Model):
     docker_profile = models.ForeignKey(DockerProfile,
         help_text='''This is the "target" container.  It will receive information about
 the "from" container as an environment var''')
+    docker_overrides = models.ForeignKey(ContainerOverrides, null=True, blank=True, help_text='Overrides for the container to run')
     link_name = models.CharField(max_length=256)
     docker_profile_from = models.ForeignKey(DockerProfile,
         related_name='profile_link_to',
@@ -118,6 +119,10 @@ class DockerProcess(models.Model):
     profile = models.ForeignKey(DockerProfile)
     container_id = models.CharField(max_length=128, null=True, blank=True)
     token = models.CharField(max_length=128, default=lambda: str(uuid4()), unique=True, null=False, db_index=True)
+<<<<<<< HEAD
     logs = models.TextField(null=True, blank=True)
     finished = models.BooleanField(default=False)
     error = models.BooleanField(default=False)
+=======
+    logs = models.TextField(null=True)
+>>>>>>> e9e5ab0d5bdcf11939c315d49b5c06f861ffe168
