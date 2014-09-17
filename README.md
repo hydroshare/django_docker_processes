@@ -54,17 +54,20 @@ You can also post any files as multipart/form-data and they will get passed alon
 
 Now, in your Docker container, you will want a script that scrapes the environment looking for any parameters and the special environment variables: `RESPONSE_URL` and `ABORT_URL`.  For example your container's init script could look exactly like this:
 
-    #!/usr/bin/python
-    
-    import requests
-    import os
-    import json
-    
-    requests.post(os.environ['RESPONSE_URL'], data={ 
-        'result_text': "result text",
-        'result_data': json.dumps(os.environ)
-    })
-    
+```python
+#!/usr/bin/python
+
+import requests
+import os
+import json
+
+requests.post(os.environ['RESPONSE_URL'], data={ 
+    'result_text': "result text",
+    'result_data': json.dumps(os.environ)
+})
+```
+
+Or check out this GitHub project using shell: [Pandoc-Docker](https://github.com/JeffHeard/pandoc-docker)
 
 
 ## What's it do?
