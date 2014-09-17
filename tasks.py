@@ -77,7 +77,6 @@ def create_container(profile, overrides=None, **kwargs):
     :return: the JSON description of the container from docker-py
     """
 
-    print "keyword args: " + str(kwargs)
     
     # get the environment from the profile and construct it as a dict.
     environment = {e.name: e.value for e in profile.dockerenvvar_set.all()}
