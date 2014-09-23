@@ -46,7 +46,12 @@ def build_image(profile, clean=False, ignore_cache=False):
             if profile.git_use_submodules:
                 sh.git('submodule','init')
                 sh.git('submodule','update')
-
+            
+            if profile.commit_id:
+                sh.git('checkout', profile.commit_id)
+            elif profile.branch:
+                sh.git('checkout', profile.branch)
+  
         result = dock.build(path=tmpd + '/repo', tag=profile.identifier, quiet=True, nocache=ignore_cache)
         for x in result:
             print x  # fixme this should use logger
@@ -350,11 +355,18 @@ def run_process(proc, overrides=None, **kwargs):
 
     # bind the task to the runtime of the container. There might be a better way to do this.
     for _ in dock.attach(name, stream=True):
-        pass
+        print _
+
+    dock.wait(name)
 
     output = dock.logs(name)
     proc.logs = output
-    dock.remove_container(name)
+    proc.save()
+    
+    try:
+       dock.remove_container(name)
+    except Exception as e:
+       print e
 
     return output
 

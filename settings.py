@@ -1,2 +1,2 @@
-DOCKER_URL='tcp://192.168.59.103:2375'
+DOCKER_URL='unix:///docker.sock'
 DOCKER_API_VERSION='1.12'
