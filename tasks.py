@@ -6,9 +6,11 @@ from tempfile import mkdtemp
 from celery import shared_task
 from urllib import urlencode
 from django_docker_processes import models
-from .settings import DOCKER_URL, DOCKER_API_VERSION
 import contextlib
 import os
+
+DOCKER_URL=os.environ.get('DOCKER_URL', 'unix:///docker.sock')
+DOCKER_API_VERSION=os.environ.get('DOCKER_API_VERSION', "1.12")
 
 @contextlib.contextmanager
 def cd(path):
