@@ -122,5 +122,6 @@ class DockerProcess(models.Model):
     logs = models.TextField(null=True, blank=True)
     finished = models.BooleanField(default=False)
     error = models.BooleanField(default=False)
+    user = models.ForeignKey('auth.User', null=True, blank=True)
 
 
