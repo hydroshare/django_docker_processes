@@ -1,33 +1,32 @@
 class DockerRouter(object):
-    def __init__(self, app):
-        self.app = app
+    def __init__(self):
         self.container_tasks = {
-            x.format(app=self.app) for x in [
-                '{app}.tasks.run_process',
-            ]
+                'django_docker_processes.tasks.run_process',
         }
         self.broadcast_tasks = {
-            x.format(app=self.app) for x in [
-                '{app}.tasks.build_image',
-                '{app}.tasks.remove_image',
-                '{app}.tasks.remove_stopped_containers',
-            ]
+                'django_docker_processes.tasks.build_image',
+                'django_docker_processes.tasks.remove_image',
+                'django_docker_processes.tasks.remove_stopped_containers',
         }
 
     def route_for_task(self, task, args=None, kwargs=None):
+        print task
+        
         if task in self.broadcast_tasks:
+            print "broadcast"
             return {
                 'exchange': 'docker',
                 'exchange_type': 'direct',
                 'routing_key': 'docker.broadcast',
-                'queue': 'docker_broadcast_tasks'
+                # 'queue': 'docker_broadcast_tasks'
             }
         elif task in self.container_tasks:
+            print "container"
             return {
                 'exchange': 'docker',
                 'exchange_type': 'direct',
                 'routing_key': 'docker.container',
-                'queue': 'docker_container_tasks'
+                # 'queue': 'docker_container_tasks'
             }
         else:
             return None
