@@ -10,10 +10,8 @@ class DockerRouter(object):
         }
 
     def route_for_task(self, task, args=None, kwargs=None):
-        print task
         
         if task in self.broadcast_tasks:
-            print "broadcast"
             return {
                 'exchange': 'docker',
                 'exchange_type': 'direct',
@@ -21,7 +19,6 @@ class DockerRouter(object):
                 # 'queue': 'docker_broadcast_tasks'
             }
         elif task in self.container_tasks:
-            print "container"
             return {
                 'exchange': 'docker',
                 'exchange_type': 'direct',
