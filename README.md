@@ -110,30 +110,34 @@ Docker Processes is implemented as a Django app and requireds Celery and an AMQP
 
 2) Add something like the below code to settings.py to establish the broadcast and direct queues for dispatching Docker tasks.  Correct the DOCKER_API_VERSION and DOCKER_URL to match your Docker configuration (if you're running Celery in a container, don't forget to make sure that the Docker socket or remote API is available to your celery workers.
 
-    CELERY_DEFAULT_QUEUE = 'default'
-    DOCKER_EXCHANGE=Exchange('docker', type='direct')
-    DEFAULT_EXCHANGE=Exchange('default', type='topic')
-    
-    CELERY_QUEUES = (
-        Queue('default', routing_key='task.#'),
-        Queue('docker_container_tasks', DOCKER_EXCHANGE, routing_key='docker.container'),
-        Broadcast('docker_broadcast_tasks', DOCKER_EXCHANGE, routing_key='docker.broadcast'),
-    )
-    CELERY_DEFAULT_EXCHANGE = 'tasks'
-    CELERY_DEFAULT_EXCHANGE_TYPE = 'topic'
-    CELERY_DEFAULT_ROUTING_KEY = 'task.default'
-    CELERY_ROUTES = ('django_docker_processes.router.Router',)
-    
-    DOCKER_URL = 'tcp://192.168.59.103:2375/'
-    DOCKER_API_VERSION = '1.12'
+```python
+CELERY_DEFAULT_QUEUE = 'default'
+DOCKER_EXCHANGE=Exchange('docker', type='direct')
+DEFAULT_EXCHANGE=Exchange('default', type='topic')
+
+CELERY_QUEUES = (
+    Queue('default', routing_key='task.#'),
+    Queue('docker_container_tasks', DOCKER_EXCHANGE, routing_key='docker.container'),
+    Broadcast('docker_broadcast_tasks', DOCKER_EXCHANGE, routing_key='docker.broadcast'),
+)
+CELERY_DEFAULT_EXCHANGE = 'tasks'
+CELERY_DEFAULT_EXCHANGE_TYPE = 'topic'
+CELERY_DEFAULT_ROUTING_KEY = 'task.default'
+CELERY_ROUTES = ('django_docker_processes.router.Router',)
+
+DOCKER_URL = 'tcp://192.168.59.103:2375/'
+DOCKER_API_VERSION = '1.12'
+```
 
 3) Run `python manage.py syncdb` to install all the models (or create migrations for South/Django 1.7 if you like)
 
 4) Run celery workers that listen to the docker_container_tasks and docker_broadcast_tasks queues on machines also running Docker daemons 
 
-    $ export DOCKER_HOST=<docker host, like unix:///var/run/docker.sock>
-    $ export DOCKER_API_VERSION=<docker client API version>
-    $ celery worker -A $(app_name) -E -Q docker_container_tasks,docker_broadcast_tasks
+```sh
+$ export DOCKER_HOST=<docker host, like unix:///var/run/docker.sock>
+$ export DOCKER_API_VERSION=<docker client API version>
+$ celery worker -A $(app_name) -E -Q docker_container_tasks,docker_broadcast_tasks
+```
 
 ## Caveats
 
