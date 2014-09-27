@@ -129,8 +129,10 @@ Docker Processes is implemented as a Django app and requireds Celery and an AMQP
 
 3) Run `python manage.py syncdb` to install all the models (or create migrations for South/Django 1.7 if you like)
 
-4) Run celery workers on machines also running Docker daemons listening like this
+4) Run celery workers that listen to the docker_container_tasks and docker_broadcast_tasks queues on machines also running Docker daemons 
 
+    $ export DOCKER_HOST=<docker host, like unix:///var/run/docker.sock>
+    $ export DOCKER_API_VERSION=<docker client API version>
     $ celery worker -A $(app_name) -E -Q docker_container_tasks,docker_broadcast_tasks
 
 ## Caveats
