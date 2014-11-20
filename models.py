@@ -115,10 +115,13 @@ class DockerPort(models.Model):
     container = models.CharField(max_length=65536)
 
 
+def docker_process_token():
+    return str(uuid4())
+
 class DockerProcess(models.Model):
     profile = models.ForeignKey(DockerProfile)
     container_id = models.CharField(max_length=128, null=True, blank=True)
-    token = models.CharField(max_length=128, default=lambda: str(uuid4()), unique=True, null=False, db_index=True)
+    token = models.CharField(max_length=128, default=docker_process_token, unique=True, null=False, db_index=True)
     logs = models.TextField(null=True, blank=True)
     finished = models.BooleanField(default=False)
     error = models.BooleanField(default=False)
