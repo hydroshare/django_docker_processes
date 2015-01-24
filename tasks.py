@@ -8,9 +8,12 @@ from urllib import urlencode
 from django_docker_processes import models
 import contextlib
 import os
+import logging
 
 DOCKER_URL=os.environ.get('DOCKER_URL', 'unix:///docker.sock')
 DOCKER_API_VERSION=os.environ.get('DOCKER_API_VERSION', "1.12")
+
+LOGGER = logging.getLogger('django')
 
 @contextlib.contextmanager
 def cd(path):
@@ -39,6 +42,8 @@ def build_image(profile, clean=False, ignore_cache=False):
     with cd(tmpd):
         sh.git('clone', profile.git_repository, 'repo')
 
+        LOGGER.info("building image for repo: {0}".format(profile.git_repository))
+
         with cd(tmpd + '/repo'):
             if profile.commit_id:
                 sh.git('checkout', profile.commit_id)
@@ -54,9 +59,9 @@ def build_image(profile, clean=False, ignore_cache=False):
             elif profile.branch:
                 sh.git('checkout', profile.branch)
   
-        result = dock.build(path=tmpd + '/repo', tag=profile.identifier, quiet=True, nocache=ignore_cache)
+        result = dock.build(path=tmpd + '/repo', tag=profile.identifier, quiet=False, nocache=ignore_cache)
         for x in result:
-            print x  # fixme this should use logger
+           LOGGER.info(x)
 
     sh.rm('-rf', tmpd)
     return result
@@ -185,8 +190,6 @@ def start_container(profile, name, overrides=None, **kwargs):
 
     :return:
     """
-
-
 
     # get the ports from the environment and construct a port set
     ports = {e.container: e.host for e in profile.dockerport_set.all()}
@@ -325,6 +328,13 @@ def run_process(proc, overrides=None, **kwargs):
     profile = proc.profile
     here = Site.objects.get_current()
     env = kwargs.get('env', {})
+    overwrite = kwargs.get('overwrite_images', False)
+
+    LOGGER.info(env)
+    LOGGER.info(overrides)
+
+    LOGGER.info("DOCKER_URL: {0}".format(DOCKER_URL))
+
     env['RESPONSE_URL'] = 'http://' + here.domain + reverse('docker-process-finished', kwargs={
         'profile_name': profile.name,
         'token': proc.token
@@ -334,8 +344,30 @@ def run_process(proc, overrides=None, **kwargs):
         'token': proc.token
     })
     kwargs['env'] = env
+
+    LOGGER.info("INPUT_URL: {0}".format(env['INPUT_URL']))
+    LOGGER.info("RESPONSE_URL: {0}".format(env['RESPONSE_URL']))
+    LOGGER.info("ABORT_URL: {0}".format(env['ABORT_URL']))
+
+    LOGGER.info("Building images (overwrite={0})...".format(overwrite))
+
+    if overwrite:
+       LOGGER.info("Profile id: {0}".format(profile.identifier))
+       # TODO: Make sure this doesn't kill running containers owned by
+       #       other users
+       # 
+       #container = dock.inspect_container
+          #dock.kill(container['Id'])
+       #   LOGGER.info("Image {0} is running in container {1}".format(
+       #         container['Image'], container['Id']))
+       #remove_stopped_containers.s()()
+       #images = dock.images(name=profile.identifier, quiet=True)
+       #for image in images:
+       #   LOGGER.info("deleting image {0}".format(image))
+       #   dock.remove_image(image)
+
     if not len(dock.images(name=profile.identifier)) > 0:
-        build_image.s(profile)()
+        build_image.s(profile, ignore_cache=True)()
 
 #    links = {link.name: (link, create_container(link.profile, link.overrides)) for link in profile.links.all()}
 #    for link, container in links.values():
@@ -343,6 +375,8 @@ def run_process(proc, overrides=None, **kwargs):
 #            build_image.s(link.profile)()
 #
 #        start_container(container['Id'], link.overrides)
+
+    LOGGER.info('tasks.py: calling create_container...')
 
     container = create_container(profile, overrides, **kwargs)
     name = container['Id']
@@ -352,6 +386,8 @@ def run_process(proc, overrides=None, **kwargs):
 
     #if len(links):
     #    kwargs['links'] = {container["Id"]: link_name for link_name, (link, container) in links.items()}
+
+    LOGGER.info('tasks.py: calling start_container...')
 
     start_container(profile, name, overrides, **kwargs)
 
