@@ -54,6 +54,11 @@ def process_aborted(request, profile_name, token, *args, **kwargs):
     :param kwargs:
     :return:
     """
+
+    import logging
+    logger = logging.getLogger('django')
+    logger.info('process_aborted called ...')
+
     proc = get_object_or_404(models.DockerProcess, profile__name=profile_name, token=token)
     profile = proc.profile
     logs = proc.logs

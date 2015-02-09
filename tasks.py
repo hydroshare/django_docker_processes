@@ -11,7 +11,7 @@ import os
 import logging
 
 DOCKER_URL=os.environ.get('DOCKER_URL', 'unix:///docker.sock')
-DOCKER_API_VERSION=os.environ.get('DOCKER_API_VERSION', "1.12")
+DOCKER_API_VERSION=os.environ.get('DOCKER_API_VERSION', '1.16')
 
 LOGGER = logging.getLogger('django')
 
@@ -92,6 +92,9 @@ def create_container(profile, overrides=None, **kwargs):
     
     # get the environment from the profile and construct it as a dict.
     environment = {e.name: e.value for e in profile.dockerenvvar_set.all()}
+
+    LOGGER.info(environment)
+
     # grab extra environment vars from keyword args
     specific_environment = kwargs.get('env', {})
 
@@ -167,6 +170,8 @@ def create_container(profile, overrides=None, **kwargs):
             volumes=volumes if len(volumes) else None
         )
 
+    LOGGER.info("Mem limit: {0}".format(mem_limit))
+
     return container
 
 def start_container(profile, name, overrides=None, **kwargs):
@@ -200,6 +205,9 @@ def start_container(profile, name, overrides=None, **kwargs):
     volumes = {e.container: e.host for e in profile.dockervolume_set.all()}
     # get the volumes from the keyword args and add to the set
     specific_volumes = kwargs.get('volumes', {})
+
+    LOGGER.info(volumes)
+    LOGGER.info(specific_volumes)
 
     # get the links from the environment and construct them as a set
     links = {e.container: e.host for e in profile.dockerlink_set.all()}
@@ -290,7 +298,7 @@ def remove_stopped_containers():
 
 
 @shared_task
-def run_process(proc, overrides=None, **kwargs):
+def run_process(proc, overrides=None, rebuild=False, **kwargs):
     """
     This is the most common task you will want to use.
 
@@ -343,7 +351,10 @@ def run_process(proc, overrides=None, **kwargs):
         'profile_name': profile.name,
         'token': proc.token
     })
+    env['UUID'] = proc.token
+
     kwargs['env'] = env
+    kwargs['memory_limit'] = '9216'
 
     LOGGER.info("INPUT_URL: {0}".format(env['INPUT_URL']))
     LOGGER.info("RESPONSE_URL: {0}".format(env['RESPONSE_URL']))
@@ -351,8 +362,13 @@ def run_process(proc, overrides=None, **kwargs):
 
     LOGGER.info("Building images (overwrite={0})...".format(overwrite))
 
-    if overwrite:
-       LOGGER.info("Profile id: {0}".format(profile.identifier))
+    #if overwrite:
+    #   LOGGER.info("Images for profile id: {0}...".format(profile.identifier))
+    #   images = dock.images(name=profile.identifier, quiet=True)
+    #   for image in images:
+          #LOGGER.info(image)
+    #      LOGGER.info("Deleting image {0}".format(image))
+    #      dock.remove_image(image, force=True)
        # TODO: Make sure this doesn't kill running containers owned by
        #       other users
        # 
@@ -366,8 +382,8 @@ def run_process(proc, overrides=None, **kwargs):
        #   LOGGER.info("deleting image {0}".format(image))
        #   dock.remove_image(image)
 
-    if not len(dock.images(name=profile.identifier)) > 0:
-        build_image.s(profile, ignore_cache=True)()
+    if rebuild or not len(dock.images(name=profile.identifier)) > 0:
+       build_image.s(profile, ignore_cache=True)()
 
 #    links = {link.name: (link, create_container(link.profile, link.overrides)) for link in profile.links.all()}
 #    for link, container in links.values():
