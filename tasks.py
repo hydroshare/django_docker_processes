@@ -414,10 +414,13 @@ def run_process(proc, overrides=None, rebuild=False, **kwargs):
     dock.wait(name)
 
     output = dock.logs(name)
+    if not output:
+       output = 'No log output from process'
     proc.logs = output
     proc.save()
     
     try:
+       LOGGER.info("Removing container {0}".format(name))
        dock.remove_container(name)
     except Exception as e:
        print e

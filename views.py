@@ -22,11 +22,19 @@ def process_finished(request, profile_name, token, *args, **kwargs):
     :param kwargs:
     :return:
     """
+    import logging
+    logger = logging.getLogger('django')
+    logger.info('process_finished called ...')
+
     proc = get_object_or_404(models.DockerProcess, profile__name=profile_name, token=token)
     profile = proc.profile
     logs = proc.logs
+    if not logs:
+        logs = 'No log output from process'
     proc.finished = True
     proc.save()
+
+    logger.info("Logs {0}".format(logs))
 
     signals.process_finished.send(models.DockerProcess,
           instance=proc,
@@ -54,7 +62,6 @@ def process_aborted(request, profile_name, token, *args, **kwargs):
     :param kwargs:
     :return:
     """
-
     import logging
     logger = logging.getLogger('django')
     logger.info('process_aborted called ...')
