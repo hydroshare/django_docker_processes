@@ -83,3 +83,20 @@ def process_aborted(request, profile_name, token, *args, **kwargs):
     return HttpResponse()
 
 
+@csrf_exempt
+def process_poll_status(request, profile_name, token, *args, **kwargs):
+    """
+    View to poll for whether process is still running
+
+    :param request:
+    :param profile_name:
+    :param token:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    proc = get_object_or_404(models.DockerProcess, profile__name=profile_name, token=token)
+
+    response_data = {'finished': proc.finished, 'error': proc.error}
+    return HttpResponse(json.dumps(response_data), content_type='application/json')
+
