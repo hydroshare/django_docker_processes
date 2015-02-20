@@ -287,7 +287,7 @@ def remove_stopped_containers():
 
 
 @shared_task
-def run_process(proc, overrides=None, **kwargs):
+def run_process(proc, overrides=None, rebuild=False, **kwargs):
     """
     This is the most common task you will want to use.
 
@@ -311,6 +311,7 @@ def run_process(proc, overrides=None, **kwargs):
 
     :param profile: The DockerProfile object
     :param overrides: A ContainerOverrides object
+    :param rebuild: Rebuild the image if True.  Otherwise try to use an existing image.
     :param kwargs: Keyword args.  See valid keyword args
     :return:
     """
@@ -334,7 +335,7 @@ def run_process(proc, overrides=None, **kwargs):
         'token': proc.token
     })
     kwargs['env'] = env
-    if not len(dock.images(name=profile.identifier)) > 0:
+    if rebuild or not len(dock.images(name=profile.identifier)) > 0:
         build_image.s(profile)()
 
 #    links = {link.name: (link, create_container(link.profile, link.overrides)) for link in profile.links.all()}
